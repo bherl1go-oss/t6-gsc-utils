@@ -182,70 +182,6 @@ namespace debug
             printf("************************************\n");
         }
 
-        void print_call_error(const game::opcode opcode)
-        {
-            if (!developer_script->current.enabled)
-            {
-                return;
-            }
-
-            const auto error = reinterpret_cast<const char*>(SELECT(0x2E27C70, 0x2DF7F70));
-            const auto fs_pos = *reinterpret_cast<char**>(SELECT(0x2E23C08, 0x2DF3F08));
-
-            if (opcode == game::opcode::OP_CallBuiltin || opcode == game::opcode::OP_CallBuiltinMethod)
-            {
-                std::string name{};
-                for (auto i = 0; i < 4; i++)
-                {
-                    const auto ptr = *reinterpret_cast<void**>(fs_pos + i);
-                    name = opcode == game::opcode::OP_CallBuiltinMethod
-                        ? gsc::find_builtin_method_name(ptr) 
-                        : gsc::find_builtin_name(ptr);
-
-                    if (!name.empty())
-                    {
-                        break;
-                    }
-                }
-
-                const auto type = opcode == game::opcode::OP_CallBuiltinMethod 
-                    ? "method" 
-                    : "function";
-
-                print_error("in call to builtin %s \"%s\": %s", type, name.data(), error);
-            }
-            else
-            {
-                const auto opcode_name = get_opcode_name(opcode);
-
-                print_error("while processing instruction %s: %s", opcode_name.data(), error);
-            }
-        }
-
-        void vm_execute_error_stub(utils::hook::assembler& a)
-        {
-            a.pushad();
-            a.push(eax);
-            a.call(print_call_error);
-            a.pop(eax);
-            a.popad();
-
-            a.add(eax, 0xFFFFFFE5);
-            a.mov(dword_ptr(ebp, 0x6C), esi);
-            a.mov(dword_ptr(ebp, 0x44), edx);
-
-            a.jmp(SELECT(0x8F8A60, 0x8F77C0));
-        }
-
-        utils::hook::detour scr_terminal_error_hook;
-        void scr_terminal_error_stub(int inst, const char* error)
-        {
-            printf("====================================================\n");
-            printf("Scr_TerminalError: %s\n", error);
-            printf("====================================================\n");
-            scr_terminal_error_hook.invoke<void>(inst, error);
-        }
-
         utils::hook::detour alloc_child_variable_hook;
         const char* allocations[0x10000];
 
@@ -330,7 +266,7 @@ namespace debug
             }
         }
 
-        void exceeded_max_child_vars_error_stub(int inst, const char* err)
+        void exceeded_max_child_vars_error_stub(game::scriptInstance_t inst, const char* err)
         {
             const std::string name = utils::string::va("minidumps/child-var-allocations-%s.zip", 
                 utils::string::get_timestamp().data());
@@ -339,42 +275,8 @@ namespace debug
             zip_file.add("allocations.txt", debug::get_child_var_allocations(1));
             zip_file.write(name, "Plutonium T6ZM child variable allocations");
 
-            scr_terminal_error_stub(inst, 
+            game::Scr_TerminalError(inst,
                 utils::string::va("%s\na child variable dump has been written at %s", err, name.data()));
-        }
-
-        bool check_infinite_loop()
-        {
-            const auto diff = game::Sys_Milliseconds() - *game::scr_starttime;
-            if (scr_max_loop_time->current.integer && diff > scr_max_loop_time->current.integer)
-            {
-                game::scr_VmPub->function_frame->fs.pos = game::fs->pos;
-                print_error("potential infinite loop in script - %ims elapsed. Killing thread.", diff);
-                kill_current_thread();
-                return true;
-            }
-
-            return false;
-        }
-
-        void vm_execute_jmp_stub(utils::hook::assembler& a)
-        {
-            const auto kill = a.newLabel();
-
-            a.pushad();
-            a.call(check_infinite_loop);
-            a.cmp(al, 0);
-            a.jne(kill);
-
-            a.popad();
-            a.inc(ebx);
-            a.and_(ebx, 0xFFFFFFFE);
-            a.movzx(eax, word_ptr(ebx));
-            a.jmp(SELECT(0x8F891F, 0x8F767F));
-
-            a.bind(kill);
-            a.popad();
-            a.jmp(SELECT(0x8F7709, 0x8F6469));
         }
     }
 
@@ -491,11 +393,6 @@ namespace debug
             {
                 return;
             }
-
-            utils::hook::jump(SELECT(0x8F8A57, 0x8F77B7), utils::hook::assemble(vm_execute_error_stub));
-            utils::hook::jump(SELECT(0x8F8918, 0x8F7678), utils::hook::assemble(vm_execute_jmp_stub));
-
-            scr_terminal_error_hook.create(SELECT(0x698C50, 0x410440), scr_terminal_error_stub);
 
             gsc::function::add("crash", []
             {
