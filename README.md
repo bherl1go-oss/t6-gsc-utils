@@ -26,24 +26,6 @@ init()
 ```
 
 ## Misc
-* `getFunction(filename, name)`: Gets a function from a GSC script.
-
-  ```c
-  init()
-  {
-      function = getFunction("maps/mp/gametypes/_callbacksetup", "callbackVoid");
-      [[ function ]]();
-  }
-  ```
-* `getFunctionName(function)`: Returns the function's name.
-  
-  ```c
-  init()
-  {
-      function = getFunction("maps/mp/gametypes/_callbacksetup", "callbackVoid");
-      print(getFunctionName(function)); // "maps/mp/gametypes/_callbacksetup::callbackVoid"
-  }
-  ```
 * `arrayRemoveKey(array, key)`: Removes an array element by its (string) key.
 
   ```c
@@ -409,24 +391,6 @@ init()
 # IO
 The basepath for all IO functions is `Plutonium/storage/t6`
 
-* `fopen(path, mode)`: Opens a file of given name with given mode, returns a file stream.
-* `fwrite(stream, text)`: Writes a string to a stream.
-* `fread(stream)`: Reads entire file.
-* `fclose(stream)`: Closes a file stream.
-* `fremove(path)`: Deletes a file.
-
-  ```c
-  init()
-  {
-      file = fopen("test.txt", "w");
-      fwrite(file, "test");
-      fclose(file);
-
-      file = fopen("test.txt", "r");
-      print(fread(file));
-      fclose(file);
-  }
-  ```
  * `fileExists(path)`: Returns true if the file exists.
  * `writeFile(path, data[, append])`: Creates a file if it doesn't exist and writes/appends text to it.
  * `readFile(path)`: Reads a file.
@@ -760,8 +724,6 @@ The values are stored as strings but all the functions below can take either a s
 * `getcurrentthread`
 * `printcallstack`
 * `getcallstack`
-* `getfunction`
-* `getfunctionname`
 * `getfunctionargcount`
 * `arrayremovekey`
 * `xor`
@@ -778,9 +740,6 @@ The values are stored as strings but all the functions below can take either a s
 * `typeof`
 * `worldget`
 * `worldset`
-* `invokefunc`
-* `detourfunc`
-* `disabledetour`
 * `http::get`
 * `httpget`
 * `curl`
@@ -796,11 +755,6 @@ The values are stored as strings but all the functions below can take either a s
 * `int64::min`
 * `int64_max`
 * `int64::max`
-* `fremove`
-* `fopen`
-* `fclose`
-* `fwrite`
-* `fread`
 * `hashstring`
 * `writefile`
 * `io::write_file`
