@@ -11,20 +11,16 @@ namespace getip
 {
     std::string get_client_ip(const int client_num)
     {
-        const auto clients = game::svs_clients.get();
+        auto* clients = *game::svs_clients;
 
         if (!clients)
         {
             return "";
         }
 
-        const auto& adr =
-            clients[client_num]
-            .header
-            .netchan
-            .remoteAddress;
+        const auto& adr = clients[client_num].header.netchan.remoteAddress;
 
-        if (adr.type != game::netadrtype_t::NA_IP)
+        if (adr.type != game::NA_IP)
         {
             return "loopback";
         }
@@ -40,20 +36,16 @@ namespace getip
 
     std::string get_client_ip_port(const int client_num)
     {
-        const auto clients = game::svs_clients.get();
+        auto* clients = *game::svs_clients;
 
         if (!clients)
         {
             return "";
         }
 
-        const auto& adr =
-            clients[client_num]
-            .header
-            .netchan
-            .remoteAddress;
+        const auto& adr = clients[client_num].header.netchan.remoteAddress;
 
-        if (adr.type != game::netadrtype_t::NA_IP)
+        if (adr.type != game::NA_IP)
         {
             return "loopback";
         }
